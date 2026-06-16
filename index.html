@@ -1,526 +1,780 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ISTE Meetings CRM</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%237F77DD'/><text x='16' y='22' text-anchor='middle' font-size='16' font-family='sans-serif' fill='white' font-weight='600'>I</text></svg>" />
-    <style>
-      * { margin: 0; padding: 0; box-sizing: border-box; }
-      body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f3; }
-      #root { min-height: 100vh; }
-    </style>
-  </head>
-  <body>
-    <div id="root"></div>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ISTE Meetings — Sales Tracker</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
 
-    <!-- React 18 -->
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #22263a;
+    --border: #2e334d;
+    --accent: #4f6ef7;
+    --accent-dim: rgba(79,110,247,0.15);
+    --green: #22c55e;
+    --green-dim: rgba(34,197,94,0.12);
+    --amber: #f59e0b;
+    --red: #ef4444;
+    --text: #e8eaf0;
+    --muted: #7b82a0;
+    --font: 'Inter', sans-serif;
+    --mono: 'JetBrains Mono', monospace;
+  }
 
-    <!-- Babel standalone (transpiles JSX in the browser) -->
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    <!-- Firebase SDK (compat / UMD) -->
-    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 14px;
+    min-height: 100vh;
+  }
 
-    <script>
-      // Initialize Firebase (compat SDK — globals available as firebase.auth(), firebase.firestore())
-      const firebaseConfig = {
-        apiKey: "AIzaSyBm9nF7p5VIvNJoVSdKsNZar4CDWMmI8T8",
-        authDomain: "iste-meetings-contentsales.firebaseapp.com",
-        projectId: "iste-meetings-contentsales",
-        storageBucket: "iste-meetings-contentsales.firebasestorage.app",
-        messagingSenderId: "180735672280",
-        appId: "1:180735672290:web:0277082b7284ce154a43bb"
-      };
-      firebase.initializeApp(firebaseConfig);
-      const auth = firebase.auth();
-      const db = firebase.firestore();
-    </script>
+  /* ── Header ── */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: -0.3px;
+  }
+  .logo-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 10px var(--accent);
+  }
+  .live-badge {
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--green);
+    background: var(--green-dim);
+    border: 1px solid rgba(34,197,94,0.25);
+    padding: 2px 8px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .live-badge::before {
+    content: '';
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
 
-    <script type="text/babel">
-      const { useState, useEffect } = React;
+  /* ── Layout ── */
+  main { padding: 24px; max-width: 1200px; margin: 0 auto; }
 
-      /* ── constants ── */
-      const USERS = {
-        jutech:       { email: "jutech@iste-meetings.com",       name: "Jordan Utech" },
-        ddepasquale:  { email: "ddepasquale@iste-meetings.com",  name: "David DePasquale" },
-      };
+  /* ── Stats Row ── */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+  }
+  .stat-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .stat-value {
+    font-size: 28px;
+    font-weight: 700;
+    font-family: var(--mono);
+    color: var(--text);
+    line-height: 1;
+  }
+  .stat-value.accent { color: var(--accent); }
+  .stat-sub {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
 
-      const STAGES = [
-        { id: "lead",        label: "Lead",        color: "#888780" },
-        { id: "qualified",   label: "Qualified",   color: "#378ADD" },
-        { id: "proposal",    label: "Proposal",    color: "#BA7517" },
-        { id: "negotiation", label: "Negotiation", color: "#7F77DD" },
-        { id: "closed_won",  label: "Closed Won",  color: "#639922" },
-        { id: "closed_lost", label: "Closed Lost", color: "#E24B4A" },
-      ];
-      const STAGE_MAP = Object.fromEntries(STAGES.map(s => [s.id, s]));
+  /* ── Rep Cards ── */
+  .reps {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .rep-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .rep-avatar {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: var(--accent-dim);
+    border: 2px solid var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--accent);
+    flex-shrink: 0;
+  }
+  .rep-name { font-weight: 600; font-size: 13px; }
+  .rep-handle { font-size: 11px; color: var(--muted); font-family: var(--mono); }
+  .rep-count {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-weight: 600;
+    font-size: 18px;
+    color: var(--accent);
+  }
 
-      const fmt = n => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n || 0);
-      const initials = name => (name || "?").split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2);
+  /* ── Drop Zone ── */
+  .drop-zone {
+    border: 2px dashed var(--border);
+    border-radius: 12px;
+    padding: 32px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 24px;
+    background: var(--surface);
+    position: relative;
+  }
+  .drop-zone:hover, .drop-zone.dragover {
+    border-color: var(--accent);
+    background: var(--accent-dim);
+  }
+  .drop-zone input[type="file"] {
+    position: absolute; inset: 0;
+    opacity: 0; cursor: pointer; width: 100%; height: 100%;
+  }
+  .drop-icon { font-size: 32px; margin-bottom: 8px; }
+  .drop-title { font-weight: 600; margin-bottom: 4px; }
+  .drop-sub { color: var(--muted); font-size: 12px; }
 
-      /* ── CSS ── */
-      const css = `
-        .app { display:flex; flex-direction:column; min-height:100vh; }
+  /* ── Toolbar ── */
+  .toolbar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .filter-btn {
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 12px;
+    font-family: var(--font);
+    transition: all 0.15s;
+  }
+  .filter-btn:hover { border-color: var(--accent); color: var(--text); }
+  .filter-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
 
-        /* auth */
-        .auth-wrap { display:flex; align-items:center; justify-content:center; min-height:100vh; background:#f5f5f3; }
-        .auth-card { background:#fff; border:0.5px solid rgba(0,0,0,0.12); border-radius:16px; padding:2.5rem; width:380px; max-width:90vw; }
-        .auth-logo { font-size:20px; font-weight:600; margin-bottom:0.25rem; letter-spacing:-0.3px; }
-        .auth-sub  { font-size:13px; color:#888; margin-bottom:2rem; }
+  .export-btn {
+    margin-left: auto;
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 12px;
+    font-family: var(--font);
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .export-btn:hover { color: var(--text); border-color: var(--text); }
 
-        /* form elements */
-        .field { margin-bottom:1.25rem; }
-        .field label { display:block; font-size:11px; font-weight:600; color:#888; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px; }
-        .field input, .field select, .field textarea {
-          width:100%; border:0.5px solid rgba(0,0,0,0.2); border-radius:8px;
-          padding:0 12px; font-size:14px; background:#fff; color:#1a1a18;
-          outline:none; font-family:inherit; transition:border-color 0.15s; height:40px;
+  /* ── Table ── */
+  .table-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  table { width: 100%; border-collapse: collapse; }
+  thead tr { background: var(--surface2); }
+  th {
+    text-align: left;
+    padding: 10px 16px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    color: var(--muted);
+    font-weight: 600;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  td {
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(46,51,77,0.5);
+    vertical-align: middle;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(79,110,247,0.04); }
+
+  .meeting-title { font-weight: 500; }
+  .meeting-org { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+    font-family: var(--mono);
+  }
+  .tag-rep {
+    background: var(--accent-dim);
+    color: var(--accent);
+    border: 1px solid rgba(79,110,247,0.3);
+  }
+  .delete-btn {
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: all 0.15s;
+  }
+  .delete-btn:hover { color: var(--red); background: rgba(239,68,68,0.1); }
+
+  .empty-state {
+    text-align: center;
+    padding: 48px 24px;
+    color: var(--muted);
+  }
+  .empty-state .icon { font-size: 40px; margin-bottom: 12px; }
+  .empty-state p { font-size: 13px; }
+
+  /* ── Toast ── */
+  #toast {
+    position: fixed;
+    bottom: 24px; right: 24px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 18px;
+    font-size: 13px;
+    font-weight: 500;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    transform: translateY(80px);
+    opacity: 0;
+    transition: all 0.3s;
+    z-index: 200;
+    max-width: 320px;
+  }
+  #toast.show { transform: translateY(0); opacity: 1; }
+  #toast.success { border-color: var(--green); color: var(--green); }
+  #toast.error { border-color: var(--red); color: var(--red); }
+
+  /* ── Add Modal ── */
+  .modal-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 300;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 28px;
+    width: 440px;
+    max-width: calc(100vw - 32px);
+  }
+  .modal h2 { font-size: 16px; margin-bottom: 20px; }
+  .field { margin-bottom: 14px; }
+  .field label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.7px; color: var(--muted); margin-bottom: 6px; }
+  .field input, .field select {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 9px 12px;
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .field input:focus, .field select:focus { border-color: var(--accent); }
+  .field select option { background: var(--surface2); }
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+  .btn-cancel {
+    padding: 8px 18px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    font-family: var(--font);
+    font-size: 13px;
+    transition: all 0.15s;
+  }
+  .btn-cancel:hover { color: var(--text); }
+  .btn-save {
+    padding: 8px 18px;
+    border-radius: 8px;
+    border: none;
+    background: var(--accent);
+    color: #fff;
+    cursor: pointer;
+    font-family: var(--font);
+    font-size: 13px;
+    font-weight: 600;
+    transition: opacity 0.15s;
+  }
+  .btn-save:hover { opacity: 0.88; }
+
+  @media (max-width: 600px) {
+    main { padding: 16px; }
+    .stat-value { font-size: 22px; }
+    th:nth-child(3), td:nth-child(3),
+    th:nth-child(5), td:nth-child(5) { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-dot"></div>
+    ISTE Meetings Tracker
+  </div>
+  <div style="display:flex;align-items:center;gap:10px">
+    <span class="live-badge" id="liveStatus">connecting…</span>
+    <button class="btn-save" style="font-size:12px;padding:6px 14px;border-radius:8px" onclick="openModal()">+ Add Meeting</button>
+  </div>
+</header>
+
+<main>
+  <!-- Stats -->
+  <div class="stats">
+    <div class="stat-card">
+      <div class="stat-label">Total Meetings</div>
+      <div class="stat-value accent" id="statTotal">—</div>
+      <div class="stat-sub">all reps</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Jordan Utech</div>
+      <div class="stat-value" id="statJordan">—</div>
+      <div class="stat-sub">jutech</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">David DePasquale</div>
+      <div class="stat-value" id="statDavid">—</div>
+      <div class="stat-sub">ddepasquale</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Today</div>
+      <div class="stat-value" id="statToday">—</div>
+      <div class="stat-sub" id="todayDate">—</div>
+    </div>
+  </div>
+
+  <!-- Rep summary -->
+  <div class="reps">
+    <div class="rep-card">
+      <div class="rep-avatar">JU</div>
+      <div>
+        <div class="rep-name">Jordan Utech</div>
+        <div class="rep-handle">jutech</div>
+      </div>
+      <div class="rep-count" id="repCountJordan">0</div>
+    </div>
+    <div class="rep-card">
+      <div class="rep-avatar">DD</div>
+      <div>
+        <div class="rep-name">David DePasquale</div>
+        <div class="rep-handle">ddepasquale</div>
+      </div>
+      <div class="rep-count" id="repCountDavid">0</div>
+    </div>
+  </div>
+
+  <!-- Drop zone -->
+  <div class="drop-zone" id="dropZone">
+    <input type="file" id="fileInput" accept=".ics" multiple>
+    <div class="drop-icon">📅</div>
+    <div class="drop-title">Drop .ics calendar invite here</div>
+    <div class="drop-sub">Or click to browse — rep is auto-detected from the organizer email</div>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <button class="filter-btn active" onclick="setFilter('all', this)">All</button>
+    <button class="filter-btn" onclick="setFilter('jutech', this)">Jordan</button>
+    <button class="filter-btn" onclick="setFilter('ddepasquale', this)">David</button>
+    <button class="export-btn" onclick="exportCSV()">⬇ Export CSV</button>
+  </div>
+
+  <!-- Table -->
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Meeting</th>
+          <th>Rep</th>
+          <th>Date & Time</th>
+          <th>Location</th>
+          <th>Added</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="meetingTable">
+        <tr><td colspan="6"><div class="empty-state"><div class="icon">📭</div><p>No meetings yet. Drop a .ics file or click + Add Meeting.</p></div></td></tr>
+      </tbody>
+    </table>
+  </div>
+</main>
+
+<!-- Add Meeting Modal -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <h2>Add Meeting Manually</h2>
+    <div class="field">
+      <label>Meeting Title</label>
+      <input type="text" id="mTitle" placeholder="e.g. Discovery call — Riverside USD">
+    </div>
+    <div class="field">
+      <label>Organization / Company</label>
+      <input type="text" id="mOrg" placeholder="e.g. Riverside Unified School District">
+    </div>
+    <div class="field">
+      <label>Rep</label>
+      <select id="mRep">
+        <option value="jutech">Jordan Utech (jutech)</option>
+        <option value="ddepasquale">David DePasquale (ddepasquale)</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Date & Time</label>
+      <input type="datetime-local" id="mDate">
+    </div>
+    <div class="field">
+      <label>Location / Room</label>
+      <input type="text" id="mLoc" placeholder="e.g. Room 214B or Virtual">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-save" onclick="addManual()">Save Meeting</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<!-- Firebase -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import {
+    getFirestore, collection, addDoc, deleteDoc, doc,
+    onSnapshot, query, orderBy, serverTimestamp
+  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBm9nF7p5VIvNJoVSdKsNZar4CDWMmI8T8",
+    authDomain: "iste-meetings-contentsales.firebaseapp.com",
+    projectId: "iste-meetings-contentsales",
+    storageBucket: "iste-meetings-contentsales.firebasestorage.app",
+    messagingSenderId: "180735672280",
+    appId: "1:180735672280:web:0277082b7284ce154a43bb"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const COL = "meetings";
+
+  // Rep map: email handle → display name
+  const REPS = {
+    jutech: "Jordan Utech",
+    ddepasquale: "David DePasquale"
+  };
+
+  // Expose globals for inline handlers
+  window._db = db;
+  window._COL = COL;
+  window._REPS = REPS;
+
+  // ── Live badge ──
+  const badge = document.getElementById("liveStatus");
+
+  // ── Real-time listener ──
+  let allMeetings = [];
+  window._allMeetings = allMeetings;
+
+  const q = query(collection(db, COL), orderBy("createdAt", "desc"));
+  onSnapshot(q, snap => {
+    badge.textContent = "● live";
+    allMeetings = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    window._allMeetings = allMeetings;
+    renderTable(window._activeFilter || "all");
+    renderStats();
+  }, err => {
+    badge.textContent = "● offline";
+    badge.style.color = "var(--red)";
+    console.error(err);
+  });
+
+  // ── Add from .ics ──
+  async function addFromICS(text, filename) {
+    const lines = text.replace(/\r\n|\r/g, "\n").split("\n");
+    const get = key => {
+      const line = lines.find(l => l.startsWith(key + ":") || l.startsWith(key + ";"));
+      if (!line) return "";
+      return line.replace(/^[^:]+:/, "").trim();
+    };
+
+    const summary = get("SUMMARY") || filename.replace(".ics","");
+    const organizer = get("ORGANIZER");
+    const dtstart = get("DTSTART");
+    const location = get("LOCATION");
+    const desc = get("DESCRIPTION");
+
+    // Detect rep from organizer handle
+    let rep = "";
+    let org = "";
+    if (organizer) {
+      const email = organizer.replace(/.*mailto:/i, "").toLowerCase();
+      const handle = email.split("@")[0];
+      if (REPS[handle]) {
+        rep = handle;
+      } else {
+        // Try to find any known handle in organizer string
+        for (const h of Object.keys(REPS)) {
+          if (organizer.toLowerCase().includes(h)) { rep = h; break; }
         }
-        .field textarea { height:auto; padding:10px 12px; resize:vertical; min-height:80px; }
-        .field input:focus, .field select:focus, .field textarea:focus { border-color:#7F77DD; }
-
-        /* buttons */
-        .btn { height:40px; padding:0 18px; border-radius:8px; font-size:14px; font-weight:500; cursor:pointer; border:0.5px solid rgba(0,0,0,0.15); background:#1a1a18; color:#fff; transition:opacity 0.15s; font-family:inherit; }
-        .btn:hover { opacity:0.85; }
-        .btn:disabled { opacity:0.5; cursor:not-allowed; }
-        .btn-outline  { background:#fff; color:#1a1a18; }
-        .btn-primary  { background:#7F77DD; border-color:#7F77DD; color:#fff; }
-        .btn-danger   { background:#E24B4A; border-color:#E24B4A; color:#fff; }
-        .btn-sm       { height:32px; padding:0 12px; font-size:13px; }
-        .err { color:#E24B4A; font-size:13px; margin-top:6px; }
-
-        /* nav */
-        .nav { background:#fff; border-bottom:0.5px solid rgba(0,0,0,0.1); padding:0 2rem; display:flex; align-items:center; gap:1.5rem; height:56px; position:sticky; top:0; z-index:100; }
-        .nav-brand { font-size:15px; font-weight:600; letter-spacing:-0.2px; margin-right:0.5rem; }
-        .nav-link  { font-size:14px; color:#aaa; cursor:pointer; padding:4px 0; border-bottom:2px solid transparent; transition:color 0.15s; }
-        .nav-link.active { color:#1a1a18; border-bottom-color:#7F77DD; }
-        .nav-right { margin-left:auto; display:flex; align-items:center; gap:12px; }
-        .avatar { width:32px; height:32px; border-radius:50%; background:#EEEDFE; color:#534AB7; font-size:12px; font-weight:600; display:flex; align-items:center; justify-content:center; }
-
-        /* main */
-        .main { padding:2rem; flex:1; max-width:1200px; width:100%; margin:0 auto; }
-
-        /* metrics */
-        .metrics { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; margin-bottom:2rem; }
-        .metric { background:#fff; border:0.5px solid rgba(0,0,0,0.1); border-radius:12px; padding:1rem 1.25rem; }
-        .metric-label { font-size:12px; color:#888; margin-bottom:6px; font-weight:500; }
-        .metric-val   { font-size:22px; font-weight:600; letter-spacing:-0.5px; }
-
-        /* pipeline */
-        .pipeline { display:grid; grid-template-columns:repeat(6,1fr); gap:10px; margin-bottom:2rem; overflow-x:auto; }
-        .pipeline-col { min-width:140px; }
-        .pipeline-head { font-size:11px; font-weight:600; padding:7px 10px; border-radius:8px 8px 0 0; border:0.5px solid rgba(0,0,0,0.1); border-bottom:none; display:flex; justify-content:space-between; align-items:center; }
-        .pipeline-body { border:0.5px solid rgba(0,0,0,0.1); border-top:none; border-radius:0 0 8px 8px; min-height:80px; padding:8px; background:#fafaf8; display:flex; flex-direction:column; gap:6px; }
-        .deal-chip { background:#fff; border:0.5px solid rgba(0,0,0,0.1); border-radius:8px; padding:8px; cursor:pointer; font-size:12px; transition:box-shadow 0.15s; }
-        .deal-chip:hover { box-shadow:0 2px 8px rgba(0,0,0,0.08); }
-        .deal-chip-name { font-weight:500; margin-bottom:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-        .deal-chip-co   { font-size:11px; color:#aaa; margin-bottom:3px; }
-        .deal-chip-val  { color:#7F77DD; font-weight:600; }
-
-        /* section */
-        .section-head  { display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem; }
-        .section-title { font-size:18px; font-weight:600; letter-spacing:-0.3px; }
-
-        /* table */
-        .table-wrap { background:#fff; border:0.5px solid rgba(0,0,0,0.1); border-radius:12px; overflow:hidden; }
-        table { width:100%; border-collapse:collapse; font-size:13px; }
-        th { text-align:left; padding:10px 14px; font-size:11px; font-weight:600; color:#888; text-transform:uppercase; letter-spacing:0.4px; background:#fafaf8; border-bottom:0.5px solid rgba(0,0,0,0.08); }
-        td { padding:10px 14px; border-bottom:0.5px solid rgba(0,0,0,0.06); vertical-align:middle; }
-        tr:last-child td { border-bottom:none; }
-        tr.clickable:hover td { background:#fafaf8; cursor:pointer; }
-        .badge { display:inline-block; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:600; }
-        .row-actions { display:flex; gap:6px; opacity:0; }
-        tr:hover .row-actions { opacity:1; }
-
-        /* modal */
-        .overlay { position:fixed; inset:0; background:rgba(0,0,0,0.4); display:flex; align-items:center; justify-content:center; z-index:200; padding:1rem; }
-        .modal { background:#fff; border-radius:16px; padding:2rem; width:600px; max-width:100%; max-height:90vh; overflow-y:auto; }
-        .modal-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; }
-        .modal-title { font-size:18px; font-weight:600; letter-spacing:-0.3px; }
-        .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
-        .modal-actions { display:flex; gap:8px; justify-content:flex-end; margin-top:1.5rem; padding-top:1rem; border-top:0.5px solid rgba(0,0,0,0.08); }
-
-        /* detail */
-        .detail-avatar { width:52px; height:52px; border-radius:50%; background:#EEEDFE; color:#534AB7; font-size:16px; font-weight:600; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-        .info-grid { display:grid; grid-template-columns:1fr 1fr; gap:0.75rem 2rem; margin-bottom:1.25rem; }
-        .info-row label { font-size:11px; color:#aaa; font-weight:600; text-transform:uppercase; letter-spacing:0.4px; display:block; margin-bottom:2px; }
-        .info-row span  { font-size:14px; color:#1a1a18; }
-
-        /* tasks */
-        .task-list { display:flex; flex-direction:column; gap:6px; margin:0.5rem 0; }
-        .task-item { display:flex; align-items:center; gap:10px; padding:8px; background:#fafaf8; border-radius:8px; border:0.5px solid rgba(0,0,0,0.08); font-size:13px; }
-        .task-item input[type=checkbox] { cursor:pointer; }
-        .task-item.done span { text-decoration:line-through; color:#aaa; }
-        .task-add { display:flex; gap:8px; margin-top:8px; }
-        .task-add input { flex:1; height:36px; border:0.5px solid rgba(0,0,0,0.2); border-radius:8px; padding:0 12px; font-size:13px; outline:none; font-family:inherit; }
-        .task-add input:focus { border-color:#7F77DD; }
-
-        @media(max-width:700px) {
-          .grid2, .info-grid { grid-template-columns:1fr; }
-          .pipeline { grid-template-columns:repeat(3,minmax(140px,1fr)); }
-          .main { padding:1rem; }
-          .nav  { padding:0 1rem; }
-        }
-      `;
-
-      /* ══════════════════════════════════════════════
-         Root App
-      ══════════════════════════════════════════════ */
-      function App() {
-        const [user,      setUser]      = useState(null);
-        const [loading,   setLoading]   = useState(true);
-        const [view,      setView]      = useState("pipeline");
-        const [deals,     setDeals]     = useState([]);
-        const [modal,     setModal]     = useState(null);
-        const [detail,    setDetail]    = useState(null);
-        const [loginForm, setLoginForm] = useState({ user: "jutech", password: "" });
-        const [authErr,   setAuthErr]   = useState("");
-
-        /* auth listener */
-        useEffect(() => {
-          const unsub = auth.onAuthStateChanged(u => { setUser(u); setLoading(false); });
-          return unsub;
-        }, []);
-
-        /* realtime deals */
-        useEffect(() => {
-          if (!user) return;
-          const unsub = db.collection("deals")
-            .orderBy("createdAt", "desc")
-            .onSnapshot(snap => setDeals(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
-          return unsub;
-        }, [user]);
-
-        const login = async () => {
-          setAuthErr("");
-          const cfg = USERS[loginForm.user];
-          if (!cfg) return setAuthErr("Unknown user.");
-          try {
-            await auth.signInWithEmailAndPassword(cfg.email, loginForm.password);
-          } catch {
-            setAuthErr("Invalid credentials. Check your password.");
-          }
-        };
-
-        const saveDeal = async data => {
-          const payload = { ...data, value: Number(data.value) || 0, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
-          if (data.id) {
-            const { id, ...rest } = payload;
-            await db.collection("deals").doc(data.id).update(rest);
-          } else {
-            await db.collection("deals").add({ ...payload, tasks: [], createdAt: firebase.firestore.FieldValue.serverTimestamp() });
-          }
-        };
-
-        const deleteDeal = async id => {
-          if (!window.confirm("Delete this deal?")) return;
-          await db.collection("deals").doc(id).delete();
-          setDetail(null);
-        };
-
-        const updateTasks = async (dealId, tasks) => {
-          await db.collection("deals").doc(dealId).update({ tasks });
-          setDetail(d => d ? { ...d, tasks } : d);
-        };
-
-        if (loading) return <div style={{display:"flex",alignItems:"center",justifyContent:"center",minHeight:"100vh",color:"#888",fontSize:14}}>Loading…</div>;
-
-        if (!user) return (
-          <>
-            <style>{css}</style>
-            <LoginScreen form={loginForm} setForm={setLoginForm} onLogin={login} error={authErr} />
-          </>
-        );
-
-        const userName = Object.values(USERS).find(u => u.email === user.email)?.name || "User";
-        const won    = deals.filter(d => d.stage === "closed_won");
-        const active = deals.filter(d => !["closed_won","closed_lost"].includes(d.stage));
-        const pipe   = active.reduce((s, d) => s + (d.value || 0), 0);
-        const rev    = won.reduce((s, d) => s + (d.value || 0), 0);
-
-        return (
-          <>
-            <style>{css}</style>
-            <div className="app">
-              <nav className="nav">
-                <span className="nav-brand">ISTE Meetings</span>
-                <span className={`nav-link ${view==="pipeline"?"active":""}`} onClick={() => setView("pipeline")}>Pipeline</span>
-                <span className={`nav-link ${view==="deals"?"active":""}`}    onClick={() => setView("deals")}>All deals</span>
-                <div className="nav-right">
-                  <div className="avatar" title={userName}>{initials(userName)}</div>
-                  <button className="btn btn-outline btn-sm" onClick={() => auth.signOut()}>Sign out</button>
-                </div>
-              </nav>
-
-              <div className="main">
-                {/* Metrics row */}
-                <div className="metrics">
-                  <div className="metric"><div className="metric-label">Total deals</div><div className="metric-val">{deals.length}</div></div>
-                  <div className="metric"><div className="metric-label">Active pipeline</div><div className="metric-val" style={{color:"#7F77DD"}}>{fmt(pipe)}</div></div>
-                  <div className="metric"><div className="metric-label">Revenue closed</div><div className="metric-val" style={{color:"#639922"}}>{fmt(rev)}</div></div>
-                  <div className="metric"><div className="metric-label">Deals won</div><div className="metric-val">{won.length}</div></div>
-                </div>
-
-                {view === "pipeline"
-                  ? <PipelineView deals={deals} onAdd={() => setModal("new")} onOpen={setDetail} />
-                  : <DealsTable   deals={deals} onAdd={() => setModal("new")} onOpen={setDetail} onDelete={deleteDeal} />
-                }
-              </div>
-            </div>
-
-            {(modal === "new" || (modal && modal.id)) && (
-              <DealModal deal={modal !== "new" ? modal : null} onSave={async d => { await saveDeal(d); setModal(null); }} onClose={() => setModal(null)} />
-            )}
-
-            {detail && (
-              <DetailModal deal={detail} onClose={() => setDetail(null)} onEdit={() => { setModal(detail); setDetail(null); }} onDelete={() => deleteDeal(detail.id)} onUpdateTasks={tasks => updateTasks(detail.id, tasks)} />
-            )}
-          </>
-        );
       }
+      // Try to get org from CN
+      const cnMatch = organizer.match(/CN=([^;:]+)/i);
+      if (cnMatch) org = cnMatch[1].trim();
+    }
 
-      /* ══ Login ══ */
-      function LoginScreen({ form, setForm, onLogin, error }) {
-        return (
-          <div className="auth-wrap">
-            <div className="auth-card">
-              <div className="auth-logo">ISTE Meetings CRM</div>
-              <div className="auth-sub">Content sales pipeline</div>
-              <div className="field">
-                <label>Account</label>
-                <select value={form.user} onChange={e => setForm(f => ({...f, user: e.target.value}))}>
-                  <option value="jutech">Jordan Utech</option>
-                  <option value="ddepasquale">David DePasquale</option>
-                </select>
-              </div>
-              <div className="field">
-                <label>Password</label>
-                <input type="password" value={form.password} onChange={e => setForm(f => ({...f, password: e.target.value}))} onKeyDown={e => e.key==="Enter" && onLogin()} />
-                {error && <div className="err">{error}</div>}
-              </div>
-              <button className="btn" style={{width:"100%"}} onClick={onLogin}>Sign in</button>
-            </div>
-          </div>
-        );
-      }
+    // Try description for org name
+    if (!org && desc) {
+      const orgMatch = desc.match(/(?:company|organization|org)[:\s]+([^\n]+)/i);
+      if (orgMatch) org = orgMatch[1].trim();
+    }
 
-      /* ══ Pipeline view ══ */
-      function PipelineView({ deals, onAdd, onOpen }) {
-        return (
-          <>
-            <div className="section-head">
-              <div className="section-title">Pipeline</div>
-              <button className="btn btn-primary btn-sm" onClick={onAdd}>+ New deal</button>
-            </div>
-            <div className="pipeline">
-              {STAGES.map(stage => {
-                const cols  = deals.filter(d => d.stage === stage.id);
-                const total = cols.reduce((s, d) => s + (d.value || 0), 0);
-                return (
-                  <div key={stage.id} className="pipeline-col">
-                    <div className="pipeline-head" style={{background: stage.color+"18", borderColor: stage.color+"40"}}>
-                      <span style={{color: stage.color}}>{stage.label}</span>
-                      <span style={{color: stage.color}}>{cols.length}</span>
-                    </div>
-                    <div className="pipeline-body">
-                      {total > 0 && <div style={{fontSize:11, color:"#aaa", paddingBottom:2}}>{fmt(total)}</div>}
-                      {cols.map(d => (
-                        <div key={d.id} className="deal-chip" onClick={() => onOpen(d)}>
-                          <div className="deal-chip-name">{d.contact || d.company || "—"}</div>
-                          {d.company && d.contact && <div className="deal-chip-co">{d.company}</div>}
-                          {d.value > 0 && <div className="deal-chip-val">{fmt(d.value)}</div>}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </>
-        );
-      }
+    // Parse date
+    let meetingDate = null;
+    if (dtstart) {
+      const ds = dtstart.replace(/[TZ]/g, "").replace(/(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})/, "$1-$2-$3T$4:$5:$6");
+      meetingDate = new Date(ds).toISOString();
+    }
 
-      /* ══ Deals table ══ */
-      function DealsTable({ deals, onAdd, onOpen, onDelete }) {
-        return (
-          <>
-            <div className="section-head">
-              <div className="section-title">All deals</div>
-              <button className="btn btn-primary btn-sm" onClick={onAdd}>+ New deal</button>
-            </div>
-            <div className="table-wrap">
-              <table>
-                <thead>
-                  <tr><th>Contact</th><th>Company</th><th>Stage</th><th>Value</th><th>Close date</th><th>Owner</th><th></th></tr>
-                </thead>
-                <tbody>
-                  {deals.length === 0 && (
-                    <tr><td colSpan={7} style={{color:"#aaa", textAlign:"center", padding:"2.5rem"}}>No deals yet — add your first one</td></tr>
-                  )}
-                  {deals.map(d => {
-                    const stage = STAGE_MAP[d.stage] || STAGE_MAP.lead;
-                    return (
-                      <tr key={d.id} className="clickable" onClick={() => onOpen(d)}>
-                        <td style={{fontWeight:500}}>{d.contact || "—"}</td>
-                        <td style={{color:"#888"}}>{d.company || "—"}</td>
-                        <td><span className="badge" style={{background: stage.color+"18", color: stage.color}}>{stage.label}</span></td>
-                        <td style={{color:"#7F77DD", fontWeight:600}}>{d.value ? fmt(d.value) : "—"}</td>
-                        <td style={{color:"#888"}}>{d.closeDate || "—"}</td>
-                        <td style={{color:"#888"}}>{d.owner || "—"}</td>
-                        <td>
-                          <div className="row-actions">
-                            <button className="btn btn-outline btn-sm" onClick={e => { e.stopPropagation(); onOpen(d); }}>View</button>
-                            <button className="btn btn-danger btn-sm"  onClick={e => { e.stopPropagation(); onDelete(d.id); }}>Delete</button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </>
-        );
-      }
+    if (!rep) {
+      // Prompt user to pick rep
+      window._pendingICS = { summary, org, meetingDate, location };
+      document.getElementById("mTitle").value = summary;
+      document.getElementById("mOrg").value = org;
+      if (meetingDate) document.getElementById("mDate").value = meetingDate.slice(0,16);
+      document.getElementById("mLoc").value = location;
+      openModal();
+      showToast("Rep not detected — please select one and save.", "error");
+      return;
+    }
 
-      /* ══ Deal modal (new / edit) ══ */
-      function DealModal({ deal, onSave, onClose }) {
-        const [form, setForm] = useState(deal || { contact:"", company:"", email:"", phone:"", stage:"lead", value:"", closeDate:"", owner:"", notes:"" });
-        const [saving, setSaving] = useState(false);
-        const set = k => e => setForm(f => ({...f, [k]: e.target.value}));
+    await addDoc(collection(db, COL), {
+      title: summary,
+      org: org || "",
+      rep,
+      meetingDate: meetingDate || null,
+      location: location || "",
+      createdAt: serverTimestamp(),
+      source: "ics"
+    });
+    showToast(`✓ Added: ${summary} → ${REPS[rep]}`, "success");
+  }
+  window._addFromICS = addFromICS;
 
-        const save = async () => {
-          setSaving(true);
-          try { await onSave(form); } finally { setSaving(false); }
-        };
+  // ── File input ──
+  const fileInput = document.getElementById("fileInput");
+  fileInput.addEventListener("change", e => {
+    [...e.target.files].forEach(f => {
+      const reader = new FileReader();
+      reader.onload = ev => addFromICS(ev.target.result, f.name);
+      reader.readAsText(f);
+    });
+    fileInput.value = "";
+  });
 
-        return (
-          <div className="overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-            <div className="modal">
-              <div className="modal-head">
-                <div className="modal-title">{deal ? "Edit deal" : "New deal"}</div>
-                <button className="btn btn-outline btn-sm" onClick={onClose}>Cancel</button>
-              </div>
-              <div className="grid2">
-                <div className="field"><label>Contact name</label><input value={form.contact}   onChange={set("contact")}   placeholder="Jane Smith" /></div>
-                <div className="field"><label>Company</label>      <input value={form.company}   onChange={set("company")}   placeholder="Acme Corp" /></div>
-                <div className="field"><label>Email</label>        <input type="email" value={form.email} onChange={set("email")} placeholder="jane@acme.com" /></div>
-                <div className="field"><label>Phone</label>        <input value={form.phone}     onChange={set("phone")}     placeholder="+1 (555) 000-0000" /></div>
-                <div className="field">
-                  <label>Stage</label>
-                  <select value={form.stage} onChange={set("stage")}>
-                    {STAGES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
-                  </select>
-                </div>
-                <div className="field"><label>Deal value ($)</label><input type="number" value={form.value} onChange={set("value")} placeholder="0" /></div>
-                <div className="field"><label>Expected close</label><input type="date" value={form.closeDate} onChange={set("closeDate")} /></div>
-                <div className="field">
-                  <label>Owner</label>
-                  <select value={form.owner} onChange={set("owner")}>
-                    <option value="">— assign —</option>
-                    <option value="Jordan Utech">Jordan Utech</option>
-                    <option value="David DePasquale">David DePasquale</option>
-                  </select>
-                </div>
-              </div>
-              <div className="field"><label>Notes</label><textarea value={form.notes} onChange={set("notes")} placeholder="Context, requirements, next steps…" /></div>
-              <div className="modal-actions">
-                <button className="btn btn-primary" onClick={save} disabled={saving}>
-                  {saving ? "Saving…" : deal ? "Save changes" : "Create deal"}
-                </button>
-              </div>
-            </div>
-          </div>
-        );
-      }
+  // ── Drag & drop ──
+  const dropZone = document.getElementById("dropZone");
+  dropZone.addEventListener("dragover", e => { e.preventDefault(); dropZone.classList.add("dragover"); });
+  dropZone.addEventListener("dragleave", () => dropZone.classList.remove("dragover"));
+  dropZone.addEventListener("drop", e => {
+    e.preventDefault();
+    dropZone.classList.remove("dragover");
+    [...e.dataTransfer.files].forEach(f => {
+      if (!f.name.endsWith(".ics")) { showToast("Only .ics files are supported.", "error"); return; }
+      const reader = new FileReader();
+      reader.onload = ev => addFromICS(ev.target.result, f.name);
+      reader.readAsText(f);
+    });
+  });
 
-      /* ══ Detail modal ══ */
-      function DetailModal({ deal, onClose, onEdit, onDelete, onUpdateTasks }) {
-        const [newTask, setNewTask] = useState("");
-        const tasks = deal.tasks || [];
-        const stage = STAGE_MAP[deal.stage] || STAGE_MAP.lead;
+  // ── Manual add ──
+  window.addManual = async function() {
+    const title = document.getElementById("mTitle").value.trim();
+    const org = document.getElementById("mOrg").value.trim();
+    const rep = document.getElementById("mRep").value;
+    const dateVal = document.getElementById("mDate").value;
+    const loc = document.getElementById("mLoc").value.trim();
 
-        const addTask = () => {
-          if (!newTask.trim()) return;
-          onUpdateTasks([...tasks, { text: newTask.trim(), done: false }]);
-          setNewTask("");
-        };
+    if (!title) { showToast("Please enter a meeting title.", "error"); return; }
 
-        return (
-          <div className="overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-            <div className="modal">
-              {/* header */}
-              <div className="modal-head">
-                <div style={{display:"flex", alignItems:"center", gap:"1rem"}}>
-                  <div className="detail-avatar">{initials(deal.contact || deal.company || "?")}</div>
-                  <div>
-                    <div style={{fontWeight:600, fontSize:17, letterSpacing:"-0.3px"}}>{deal.contact || "—"}</div>
-                    <div style={{fontSize:13, color:"#888", marginTop:2}}>{deal.company || ""}</div>
-                  </div>
-                </div>
-                <div style={{display:"flex", gap:8}}>
-                  <button className="btn btn-outline btn-sm" onClick={onEdit}>Edit</button>
-                  <button className="btn btn-outline btn-sm" onClick={onClose}>✕</button>
-                </div>
-              </div>
+    await addDoc(collection(db, COL), {
+      title, org, rep,
+      meetingDate: dateVal ? new Date(dateVal).toISOString() : null,
+      location: loc,
+      createdAt: serverTimestamp(),
+      source: "manual"
+    });
+    showToast(`✓ Saved: ${title}`, "success");
+    closeModal();
+    clearModal();
+  };
 
-              {/* stage + value */}
-              <div style={{margin:"0.25rem 0 1.25rem", display:"flex", alignItems:"center", gap:10}}>
-                <span className="badge" style={{background: stage.color+"18", color: stage.color, fontSize:12}}>{stage.label}</span>
-                {deal.value > 0 && <span style={{fontWeight:600, color:"#7F77DD"}}>{fmt(deal.value)}</span>}
-                {deal.closeDate && <span style={{fontSize:13, color:"#aaa"}}>Close {deal.closeDate}</span>}
-              </div>
+  // ── Delete ──
+  window.deleteMeeting = async function(id) {
+    if (!confirm("Remove this meeting?")) return;
+    await deleteDoc(doc(db, COL, id));
+    showToast("Meeting removed.", "success");
+  };
 
-              {/* info grid */}
-              <div className="info-grid">
-                {[["Email",deal.email],["Phone",deal.phone],["Owner",deal.owner]].map(([label,val]) =>
-                  val ? <div key={label} className="info-row"><label>{label}</label><span>{val}</span></div> : null
-                )}
-              </div>
+  // ── Render ──
+  window._activeFilter = "all";
 
-              {/* notes */}
-              {deal.notes && (
-                <div style={{marginBottom:"1.25rem", padding:"0.75rem 1rem", background:"#fafaf8", borderRadius:10, fontSize:13, color:"#555", lineHeight:1.6}}>
-                  {deal.notes}
-                </div>
-              )}
+  window.setFilter = function(f, btn) {
+    window._activeFilter = f;
+    document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    renderTable(f);
+  };
 
-              {/* tasks */}
-              <div style={{borderTop:"0.5px solid rgba(0,0,0,0.08)", paddingTop:"1rem"}}>
-                <div style={{fontSize:13, fontWeight:600, marginBottom:"0.5rem"}}>
-                  Tasks {tasks.length > 0 && `(${tasks.filter(t=>t.done).length}/${tasks.length} done)`}
-                </div>
-                <div className="task-list">
-                  {tasks.map((t, i) => (
-                    <div key={i} className={`task-item ${t.done?"done":""}`}>
-                      <input type="checkbox" checked={t.done} onChange={() => onUpdateTasks(tasks.map((x,j) => j===i ? {...x,done:!x.done} : x))} />
-                      <span style={{flex:1}}>{t.text}</span>
-                      <button style={{background:"none", border:"none", cursor:"pointer", color:"#ccc", fontSize:18, lineHeight:1}} onClick={() => onUpdateTasks(tasks.filter((_,j) => j!==i))}>×</button>
-                    </div>
-                  ))}
-                </div>
-                <div className="task-add">
-                  <input value={newTask} onChange={e => setNewTask(e.target.value)} placeholder="Add a task…" onKeyDown={e => e.key==="Enter" && addTask()} />
-                  <button className="btn btn-outline btn-sm" onClick={addTask}>Add</button>
-                </div>
-              </div>
+  function renderTable(filter) {
+    const tbody = document.getElementById("meetingTable");
+    let data = window._allMeetings || [];
+    if (filter !== "all") data = data.filter(m => m.rep === filter);
 
-              <div className="modal-actions">
-                <button className="btn btn-danger btn-sm" onClick={onDelete}>Delete deal</button>
-              </div>
-            </div>
-          </div>
-        );
-      }
+    if (!data.length) {
+      tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="icon">📭</div><p>No meetings${filter !== "all" ? " for this rep" : " yet"}. Drop a .ics file or click + Add Meeting.</p></div></td></tr>`;
+      return;
+    }
 
-      /* ══ Mount ══ */
-      const root = ReactDOM.createRoot(document.getElementById("root"));
-      root.render(<App />);
-    </script>
-  </body>
+    tbody.innerHTML = data.map(m => {
+      const repName = REPS[m.rep] || m.rep || "—";
+      const repHandle = m.rep || "";
+      const dateStr = m.meetingDate ? new Date(m.meetingDate).toLocaleString("en-US", {month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}) : "—";
+      const added = m.createdAt?.toDate ? m.createdAt.toDate().toLocaleDateString("en-US",{month:"short",day:"numeric"}) : "—";
+      return `<tr>
+        <td>
+          <div class="meeting-title">${esc(m.title || "Untitled")}</div>
+          ${m.org ? `<div class="meeting-org">${esc(m.org)}</div>` : ""}
+        </td>
+        <td><span class="tag tag-rep">${esc(repHandle)}</span></td>
+        <td>${dateStr}</td>
+        <td>${esc(m.location || "—")}</td>
+        <td style="color:var(--muted);font-size:12px">${added}</td>
+        <td><button class="delete-btn" onclick="deleteMeeting('${m.id}')">✕</button></td>
+      </tr>`;
+    }).join("");
+  }
+
+  function renderStats() {
+    const data = window._allMeetings || [];
+    const today = new Date().toDateString();
+    document.getElementById("statTotal").textContent = data.length;
+    document.getElementById("statJordan").textContent = data.filter(m => m.rep === "jutech").length;
+    document.getElementById("statDavid").textContent = data.filter(m => m.rep === "ddepasquale").length;
+    document.getElementById("repCountJordan").textContent = data.filter(m => m.rep === "jutech").length;
+    document.getElementById("repCountDavid").textContent = data.filter(m => m.rep === "ddepasquale").length;
+    const todayCount = data.filter(m => m.meetingDate && new Date(m.meetingDate).toDateString() === today).length;
+    document.getElementById("statToday").textContent = todayCount;
+    document.getElementById("todayDate").textContent = new Date().toLocaleDateString("en-US",{month:"short",day:"numeric"});
+  }
+
+  // ── Export CSV ──
+  window.exportCSV = function() {
+    const data = window._allMeetings || [];
+    const rows = [["Title","Org","Rep","Rep Name","Meeting Date","Location","Added"]];
+    data.forEach(m => rows.push([
+      m.title, m.org, m.rep, REPS[m.rep]||"",
+      m.meetingDate ? new Date(m.meetingDate).toLocaleString() : "",
+      m.location,
+      m.createdAt?.toDate ? m.createdAt.toDate().toLocaleString() : ""
+    ]));
+    const csv = rows.map(r => r.map(v => `"${(v||"").replace(/"/g,'""')}"`).join(",")).join("\n");
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([csv], {type:"text/csv"}));
+    a.download = "iste-meetings.csv";
+    a.click();
+  };
+
+  // ── Helpers ──
+  function esc(s) {
+    return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  }
+  window.openModal = function() { document.getElementById("modal").classList.add("open"); };
+  window.closeModal = function() { document.getElementById("modal").classList.remove("open"); };
+  function clearModal() {
+    ["mTitle","mOrg","mDate","mLoc"].forEach(id => document.getElementById(id).value = "");
+    document.getElementById("mRep").selectedIndex = 0;
+  }
+  function showToast(msg, type="success") {
+    const t = document.getElementById("toast");
+    t.textContent = msg;
+    t.className = `show ${type}`;
+    clearTimeout(window._toastTimer);
+    window._toastTimer = setTimeout(() => t.className = "", 3500);
+  }
+  window.showToast = showToast;
+</script>
+
+</body>
 </html>
